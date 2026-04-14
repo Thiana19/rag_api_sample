@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Generated files — run scraper.py + indexer.py to regenerate
+scraped_content.json
+chroma_db/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Env (no keys used, but good practice)
+.env
+
+# Local config — copy config.example.py to config.py and fill in your values
+config.py

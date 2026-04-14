@@ -1,0 +1,10 @@
+fastapi==0.115.0
+uvicorn==0.30.6
+langchain==0.3.0
+langchain-community==0.3.0
+langchain-chroma==0.1.4
+chromadb==0.5.7
+beautifulsoup4==4.12.3
+requests==2.32.3
+ollama==0.3.3
+sentence_transformers==3.0.1

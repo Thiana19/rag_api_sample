@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SyllaGlobalEd Assistant</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      width: 100%;
+      background: #0d2b45;
+      color: white;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    header span {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 780px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      gap: 16px;
+    }
+
+    #messages {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 300px;
+    }
+
+    .bubble {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .bubble.user {
+      background: #1a73e8;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 3px;
+    }
+
+    .bubble.bot {
+      background: white;
+      color: #1a1a1a;
+      align-self: flex-start;
+      border-bottom-left-radius: 3px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+
+    .bubble.thinking {
+      background: white;
+      color: #999;
+      align-self: flex-start;
+      font-style: italic;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      background: white;
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    #question {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 0.95rem;
+      font-family: inherit;
+      resize: none;
+      height: 44px;
+      line-height: 44px;
+      padding: 0;
+    }
+
+    #send-btn {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    #send-btn:hover { background: #1558c0; }
+    #send-btn:disabled { background: #a0bde8; cursor: not-allowed; }
+
+    .welcome {
+      text-align: center;
+      color: #888;
+      margin-top: 60px;
+    }
+
+    .welcome h2 { font-size: 1.1rem; color: #444; margin-bottom: 8px; }
+
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .suggestion {
+      background: white;
+      border: 1px solid #dde3ea;
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: #444;
+      transition: border-color 0.2s;
+    }
+
+    .suggestion:hover { border-color: #1a73e8; color: #1a73e8; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>SyllaGlobalEd Assistant</h1>
+    <span>Ask anything about our services, courses, and more</span>
+  </div>
+</header>
+
+<div class="chat-container">
+  <div id="messages">
+    <div class="welcome" id="welcome">
+      <h2>How can I help you today?</h2>
+      <p>Ask me anything about SyllaGlobalEd Services.</p>
+      <div class="suggestions">
+        <div class="suggestion" onclick="ask('What services do you offer?')">What services do you offer?</div>
+        <div class="suggestion" onclick="ask('What courses are available?')">What courses are available?</div>
+        <div class="suggestion" onclick="ask('How can I apply?')">How can I apply?</div>
+        <div class="suggestion" onclick="ask('Who are your partners?')">Who are your partners?</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-row">
+    <input id="question" type="text" placeholder="Type your question..." onkeydown="if(event.key==='Enter') sendQuestion()" />
+    <button id="send-btn" onclick="sendQuestion()">Send</button>
+  </div>
+</div>
+
+<script>
+  async function ask(text) {
+    document.getElementById('question').value = text;
+    await sendQuestion();
+  }
+
+  async function sendQuestion() {
+    const input = document.getElementById('question');
+    const question = input.value.trim();
+    if (!question) return;
+
+    // Hide welcome screen
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+
+    const messages = document.getElementById('messages');
+    const btn = document.getElementById('send-btn');
+
+    // Show user bubble
+    messages.innerHTML += `<div class="bubble user">${escapeHtml(question)}</div>`;
+    input.value = '';
+    btn.disabled = true;
+
+    // Show thinking bubble
+    const thinkingId = 'thinking-' + Date.now();
+    messages.innerHTML += `<div class="bubble thinking" id="${thinkingId}">Thinking...</div>`;
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+      const res = await fetch('/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      });
+
+      const data = await res.json();
+      document.getElementById(thinkingId).remove();
+
+      messages.innerHTML += `<div class="bubble bot">${escapeHtml(data.answer)}</div>`;
+    } catch (e) {
+      document.getElementById(thinkingId).remove();
+      messages.innerHTML += `<div class="bubble bot">Sorry, something went wrong. Please try again.</div>`;
+    }
+
+    btn.disabled = false;
+    messages.scrollTop = messages.scrollHeight;
+    input.focus();
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+</script>
+</body>
+</html>
